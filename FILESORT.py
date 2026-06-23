@@ -106,7 +106,9 @@ class MiFrame(wx.Frame):
     def __init__(self):
         super().__init__(parent=None, title="FileSort", size=(900, 600))
         self.panel= MiPanel(self)
-        icono = wx.Icon("icono.ico", wx.BITMAP_TYPE_ICO)
+        icono = (wx.Icon(path, wx.BITMAP_TYPE_ICO)
+                 if (path := next((p for p in (os.path.join(os.path.dirname(os.path.abspath(__file__)), 'icono.ico'), os.path.join(os.getcwd(), 'icono.ico'))
+                                   if os.path.exists(p)), None)) else wx.NullIcon())
         self.SetIcon(icono)
 
         #Barra de busqueda
