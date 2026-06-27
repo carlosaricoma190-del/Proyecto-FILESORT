@@ -2,6 +2,9 @@ import wx
 import os
 import shutil #shutil mueve los archivos a sus respectivas directorios
 import datetime #datetime se usa para mostrar la fecha de modificacion de los archivos
+import wx.adv #wx.adv se usa para mostrar la pantalla de bienvenida (splash screen)
+
+RUTA_BASE = os.path.dirname(os.path.abspath(__file__)) #Esto obtiene la ruta del archivo actual y la guarda en la variable RUTA_BASE
 
 class MiPanel(wx.Panel):
     def __init__(self, parent):
@@ -101,6 +104,27 @@ class OrganizarArchivosDialog(wx.Frame):
         wx.MessageBox("Archivos organizados correctamente", "Éxito", wx.OK | wx.ICON_INFORMATION)
         self.parent.actualizar_arbol() #Llama a la funcion actualizar_arbol() del frame principal para actualizarlo
         self.Close() #Cierra la ventana "Organizar archivos" despues de organizar los archivos
+        
+#clase para mostrar un screen en la pantalla antes de iniciar con el Frame
+class MiSplash(wx.adv.SplashScreen):
+    def __init__(self):
+        ruta_logo = os.path.join(RUTA_BASE, "logo.png")
+        os.path.exists(ruta_logo)
+        imagen = wx.Image(ruta_logo) 
+        imagen = imagen.Scale(100, 100, wx.IMAGE_QUALITY_HIGH)
+        bitmap = wx.Bitmap(os.path.join(RUTA_BASE, "logo.png"))
+        splashStyle = wx.adv.SPLASH_CENTRE_ON_SCREEN | wx.adv.SPLASH_TIMEOUT
+
+        super().__init__(bitmap, splashStyle, 3000, None, -1)
+
+        self.Bind(wx.EVT_CLOSE, self.cerrar)
+        self.Centre()
+        self.Show()
+
+    def cerrar(self, event):
+        frame = MiFrame()
+        frame.Show()
+        event.Skip()        
 
 class MiFrame(wx.Frame):
     def __init__(self):
@@ -159,6 +183,7 @@ class MiFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.tema_oscuro, opcion_tema_oscuro)
         self.Bind(wx.EVT_MENU, self.tema_claro, opcion_tema_claro)
         self.Bind(wx.EVT_MENU, self.mostrar_estadisticas, opcion_estadisticas)
+        self.Bind(wx.EVT_MENU, self.acerca_de, opcion_acerca_de)
 
         #Detecta las columnas
         self.panel.arbol.Bind(wx.EVT_TREE_SEL_CHANGED, self.mostrar_contenido_carpeta)
@@ -340,7 +365,27 @@ class MiFrame(wx.Frame):
         self.panel.arbol.SetItemData(raiz, self.ruta_carpeta)
         self.cargar_arbol(self.ruta_carpeta, raiz)
         self.panel.arbol.Expand(raiz)  # Expandir el nodo raíz para mostrar los archivos
+        #Funcion para para crear el "Acerca de" para mostrar a los desarrolladores
+    def acerca_de(self, event):
+        info = wx.adv.AboutDialogInfo()
+        logo = wx.Icon(os.path.join(RUTA_BASE, "logo.png"))
+        info.SetIcon(logo)
 
+        info.SetName("FILESORT")
+        info.SetVersion("1.0")
+        info.SetDescription(
+            "Aplicación para organizar archivos por categorías,\n"
+            "explorar carpetas y visualizar información de los archivos,\n"
+            "Proyecto desarrollado con Python utilizando wxPython"
+        )
+        info.SetCopyright("© 2026")
+        info.SetWebSite("https://github.com/carlosaricoma190-del/Proyecto-FILESORT.git")
+        info.SetLicence("Proyecto desarrollado con fines educativos")
+        info.AddDeveloper("Juan Aricoma y Tomas Tarifa")
+
+        wx.adv.AboutBox(info)
+
+    
 #pregunta si la app corre local o la importe
 if __name__ == "__main__":
     app = wx.App(redirect=False)
