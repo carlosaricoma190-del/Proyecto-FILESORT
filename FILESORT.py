@@ -588,5 +588,5 @@ class MiFrame(wx.Frame):
 #pregunta si la app corre local o la importe
 if __name__ == "__main__":
     app = wx.App(redirect=False)
-    frame= MiFrame()
+    splash = MiSplash()
     app.MainLoop()
