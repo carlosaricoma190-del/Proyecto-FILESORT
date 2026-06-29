@@ -51,7 +51,6 @@ class OrganizarArchivosDialog(wx.Frame):
         super().__init__(parent, title = "Organizar archivos", size=(800, 400))
         self.parent = parent
         self.ruta_carpeta = ruta_carpeta
-        #self.panel.arbol.Bind(wx.EVT_TREE_SEL_CHANGED, self.abrir_archivo)
         panel = wx.Panel(self)
         texto = wx.StaticText(panel, label="Seleccione una opción para organizar los archivos:")
         texto_2 = wx.StaticText(panel, label="ADVERTENCIA: Esta acción moverá los archivos a sus respectivas carpetas y no se podrá deshacer.")
@@ -67,11 +66,6 @@ class OrganizarArchivosDialog(wx.Frame):
         sizer.Add(boton_organizar, proportion=0, flag=wx.ALL, border=10)
 
         panel.SetSizer(sizer)
-    
-    #def abrir_archivo(self, event):
-        #item = event.GetItem()
-
-
     
 #Evento del botón "Organizar ahora"
     def organizar_archivos(self, event):
@@ -175,10 +169,10 @@ class MiFrame(wx.Frame):
         
         #Eventos del menú
         self.Bind(wx.EVT_MENU, self.abrir_carpeta, opcion_abrir_carpeta)
-        #self.Bind(wx.EVT_MENU, self.ordenar_por_nombre, opcion_ordenar_nombre)
-        #self.Bind(wx.EVT_MENU, self.ordenar_por_fecha, opcion_ordenar_fecha)
-        #self.Bind(wx.EVT_MENU, self.ordenar_por_tamaño_mayor, opcion_ordenar_tamaño_mayor)
-        #self.Bind(wx.EVT_MENU, self.ordenar_por_tamaño_menor, opcion_ordenar_tamaño_menor)
+        self.Bind(wx.EVT_MENU, self.ordenar_por_nombre, opcion_ordenar_nombre)
+        self.Bind(wx.EVT_MENU, self.ordenar_por_fecha, opcion_ordenar_fecha)
+        self.Bind(wx.EVT_MENU, self.ordenar_por_tamaño_mayor_a_menor, opcion_ordenar_tamaño_mayor)
+        self.Bind(wx.EVT_MENU, self.ordenar_por_tamaño_menor_a_mayor, opcion_ordenar_tamaño_menor)
         self.Bind(wx.EVT_MENU, self.abrir_ventana_organizar, opcion_organizar_archivos)
         self.Bind(wx.EVT_MENU, self.tema_oscuro, opcion_tema_oscuro)
         self.Bind(wx.EVT_MENU, self.tema_claro, opcion_tema_claro)
@@ -194,6 +188,8 @@ class MiFrame(wx.Frame):
 
         self.Show()
         self.Center()
+
+    #Funciones del menu
     
     #Funciones para cambiar el tema de la app
     def tema_oscuro(self, event):
@@ -342,8 +338,6 @@ class MiFrame(wx.Frame):
         ruta = self.panel.arbol.GetItemData(item)
         if os.path.isfile(ruta):
             os.startfile(ruta)
-
-    #Funciones del menu
     
     #Función para abrir el directorio y mostrar los archivos en la lista
     def abrir_carpeta(self,event):
@@ -365,6 +359,176 @@ class MiFrame(wx.Frame):
         self.panel.arbol.SetItemData(raiz, self.ruta_carpeta)
         self.cargar_arbol(self.ruta_carpeta, raiz)
         self.panel.arbol.Expand(raiz)  # Expandir el nodo raíz para mostrar los archivos
+
+    #Funcion para ordenar por nombre
+    def ordenar_por_nombre(self, event):
+
+        if not hasattr(self, "ruta_actual"):
+           return
+
+        self.panel.lista.DeleteAllItems()
+
+        archivos = os.listdir(self.ruta_actual)
+        archivos.sort(key=str.lower)
+
+        for archivo in archivos:
+
+            ruta_archivo = os.path.join(self.ruta_actual, archivo)
+
+            if os.path.isdir(ruta_archivo):
+                tipo = "Carpeta"
+                tamaño = "-"
+            else:
+                tipo = os.path.splitext(archivo)[1]
+
+                if os.path.getsize(ruta_archivo) < 1024 * 1024:
+                    tamaño = str(os.path.getsize(ruta_archivo)//1024) + " KB"
+                else:
+                    tamaño = str(os.path.getsize(ruta_archivo)//(1024*1024)) + " MB"
+
+            fecha = datetime.datetime.fromtimestamp(
+                os.path.getmtime(ruta_archivo)
+            ).strftime("%d/%m/%Y %H:%M")
+
+            indice = self.panel.lista.InsertItem(
+                self.panel.lista.GetItemCount(),
+                archivo
+            )
+
+            self.panel.lista.SetItem(indice, 1, tipo)
+            self.panel.lista.SetItem(indice, 2, tamaño)
+            self.panel.lista.SetItem(indice, 3, fecha)
+
+    #Funcion para ordenar por fecha
+    def ordenar_por_fecha(self, event):
+        
+        if not hasattr(self, "ruta_actual"):
+           return
+
+        self.panel.lista.DeleteAllItems()
+
+        archivos = os.listdir(self.ruta_actual)
+
+        archivos.sort(
+            key=lambda archivo: os.path.getmtime(
+                os.path.join(self.ruta_actual, archivo)
+            ),
+            reverse=True
+        )
+
+        for archivo in archivos:
+
+            ruta_archivo = os.path.join(self.ruta_actual, archivo)
+
+            if os.path.isdir(ruta_archivo):
+                tipo = "Carpeta"
+                tamaño = "-"
+            else:
+                tipo = os.path.splitext(archivo)[1]
+
+                if os.path.getsize(ruta_archivo) < 1024 * 1024:
+                    tamaño = str(os.path.getsize(ruta_archivo)//1024) + " KB"
+                else:
+                    tamaño = str(os.path.getsize(ruta_archivo)//(1024*1024)) + " MB"
+
+            fecha = datetime.datetime.fromtimestamp(
+                os.path.getmtime(ruta_archivo)
+            ).strftime("%d/%m/%Y %H:%M")
+
+            indice = self.panel.lista.InsertItem(
+                self.panel.lista.GetItemCount(),
+                archivo
+            )
+
+            self.panel.lista.SetItem(indice,1,tipo)
+            self.panel.lista.SetItem(indice,2,tamaño)
+            self.panel.lista.SetItem(indice,3,fecha)
+
+    #Funcion para ordenar de mayor a menor
+    def ordenar_por_mayor_a_menor(self, event):
+
+        if not hasattr(self, "ruta_actual"):
+           return
+
+        self.panel.lista.DeleteAllItems()
+
+        archivos = os.listdir(self.ruta_actual)
+        archivos.sort(key=lambda archivo: os.path.getsize(
+                        os.path.join(self.ruta_actual, archivo)
+                    ) if os.path.isfile(os.path.join(self.ruta_actual, archivo)) else -1,
+                    reverse=True
+        )
+
+        for archivo in archivos:
+
+            ruta_archivo = os.path.join(self.ruta_actual, archivo)
+
+            if os.path.isdir(ruta_archivo):
+                tipo = "Carpeta"
+                tamaño = "-"
+            else:
+                tipo = os.path.splitext(archivo)[1]
+
+                if os.path.getsize(ruta_archivo) < 1024 * 1024:
+                    tamaño = str(os.path.getsize(ruta_archivo)//1024) + " KB"
+                else:
+                    tamaño = str(os.path.getsize(ruta_archivo)//(1024*1024)) + " MB"
+
+            fecha = datetime.datetime.fromtimestamp(
+                os.path.getmtime(ruta_archivo)
+            ).strftime("%d/%m/%Y %H:%M")
+
+            indice = self.panel.lista.InsertItem(
+                self.panel.lista.GetItemCount(),
+                archivo
+            )
+
+            self.panel.lista.SetItem(indice, 1, tipo)
+            self.panel.lista.SetItem(indice, 2, tamaño)
+            self.panel.lista.SetItem(indice, 3, fecha)
+
+    #Funcion para ordenar de menor a mayor
+    def ordenar_por_menor_a_mayor(self, event):
+
+        if not hasattr(self, "ruta_actual"):
+           return
+
+        self.panel.lista.DeleteAllItems()
+
+        archivos = os.listdir(self.ruta_actual)
+        archivos.sort(key=lambda archivo: os.path.getsize(
+                          os.path.join(self.ruta_actual, archivo)
+                     ) if os.path.isfile(os.path.join(self.ruta_actual, archivo)) else -1
+        )
+
+        for archivo in archivos:
+
+            ruta_archivo = os.path.join(self.ruta_actual, archivo)
+
+            if os.path.isdir(ruta_archivo):
+                tipo = "Carpeta"
+                tamaño = "-"
+            else:
+                tipo = os.path.splitext(archivo)[1]
+
+                if os.path.getsize(ruta_archivo) < 1024 * 1024:
+                    tamaño = str(os.path.getsize(ruta_archivo)//1024) + " KB"
+                else:
+                    tamaño = str(os.path.getsize(ruta_archivo)//(1024*1024)) + " MB"
+
+            fecha = datetime.datetime.fromtimestamp(
+                os.path.getmtime(ruta_archivo)
+            ).strftime("%d/%m/%Y %H:%M")
+
+            indice = self.panel.lista.InsertItem(
+                self.panel.lista.GetItemCount(),
+                archivo
+            )
+
+            self.panel.lista.SetItem(indice, 1, tipo)
+            self.panel.lista.SetItem(indice, 2, tamaño)
+            self.panel.lista.SetItem(indice, 3, fecha)                 
+    
         #Funcion para para crear el "Acerca de" para mostrar a los desarrolladores
     def acerca_de(self, event):
         info = wx.adv.AboutDialogInfo()
