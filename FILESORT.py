@@ -1,23 +1,26 @@
-import wx
-import os
+import wx #Libreria para crear la interfaz gráfica
+import os #Permite trabajar con archivos y directorios del sistema
 import shutil #shutil mueve los archivos a sus respectivas directorios
 import datetime #datetime se usa para mostrar la fecha de modificacion de los archivos
 import wx.adv #wx.adv se usa para mostrar la pantalla de bienvenida (splash screen)
 
 RUTA_BASE = os.path.dirname(os.path.abspath(__file__)) #Esto obtiene la ruta del archivo actual y la guarda en la variable RUTA_BASE
 
+#La clase MiPanel crea el panel principal de la aplicación y contiene el árbol de directorios, la lista de archivos y la barra de búsqueda.
 class MiPanel(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent)
-        #lista onde se mostrarán los archivos
+        #lista donde se mostrarán los directorios y archivos
         self.arbol = wx.TreeCtrl(self)
-        #Icono para los directorios y archivos
+        #Iconos para los directorios y archivos
         self.imagenes = wx.ImageList(16, 16)
         self.icono_carpeta = self.imagenes.Add(wx.ArtProvider.GetBitmap(wx.ART_FOLDER, wx.ART_OTHER, (16, 16)))
         self.icono_archivo = self.imagenes.Add(wx.ArtProvider.GetBitmap(wx.ART_NORMAL_FILE, wx.ART_OTHER, (16, 16)))
+
+        #Asigna la lista de iconos al árbol
         self.arbol.AssignImageList(self.imagenes)
 
-        #Columas del arbol
+        #Lista donde se muestra informacion de los archivos
         self.lista = wx.ListCtrl(self, style=wx.LC_REPORT)
         self.lista.InsertColumn(0, "Nombre", width=200)
         self.lista.InsertColumn(1, "Tipo", width=100)
@@ -28,7 +31,7 @@ class MiPanel(wx.Panel):
         self.barra_busqueda = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER)
         self.boton_buscar = wx.Button(self, label="Buscar")
 
-        #sizer para la barra de busqueda
+        #sizer para la barra de busqueda y el arbol esten organizados
         sizer_busqueda = wx.BoxSizer(wx.VERTICAL)
         sizer_busqueda.Add(self.barra_busqueda, proportion=0, 
                 flag=wx.EXPAND | wx.ALL, border=5)
@@ -37,25 +40,36 @@ class MiPanel(wx.Panel):
         sizer_busqueda.Add(self.arbol, proportion=1,
                 flag=wx.EXPAND | wx.ALL, border=5)
         
-        #sizer principal
+        #Sizer principal de la ventana
+        #A la izquierda esta la busqueda y a la derecha la lista con la informacion de los archivos
         sizer_menu = wx.BoxSizer(wx.HORIZONTAL)
         sizer_menu.Add(sizer_busqueda, proportion=1,
                  flag=wx.EXPAND | wx.ALL, border=10)
         sizer_menu.Add(self.lista, proportion =1,
                 flag=wx.EXPAND | wx.ALL, border=10)
+
+        #Asigna el sizer principal al panel
         self.SetSizer(sizer_menu)
 
-#Esta clase abre la ventana "Organizar archivos"
+#Esta clase esta encargada de organizar automaticamente
 class OrganizarArchivosDialog(wx.Frame):
     def __init__(self, parent, ruta_carpeta):
         super().__init__(parent, title = "Organizar archivos", size=(800, 400))
+        #Referencia al frame principal
         self.parent = parent
+        #Ruta de la carpeta seleccionada
         self.ruta_carpeta = ruta_carpeta
+        #Panel principal de la ventana
         panel = wx.Panel(self)
+        #Texto informativo antes de organizar archivos
         texto = wx.StaticText(panel, label="Seleccione una opción para organizar los archivos:")
+        #Advertencia para el usuario
         texto_2 = wx.StaticText(panel, label="ADVERTENCIA: Esta acción moverá los archivos a sus respectivas carpetas y no se podrá deshacer.")
+        #Opcion para organizar por tipo de archivo
         opcion_tipo_archivo = wx.RadioButton(panel, label="Organizar por tipo de archivo", style=wx.RB_GROUP)
+        #Boton que inicia la organización
         boton_organizar = wx.Button(panel, label="Organizar ahora")
+        #Evento del boton
         boton_organizar.Bind(wx.EVT_BUTTON, self.organizar_archivos)
 
         #Sizer de la ventana "Organizar archivos"
@@ -69,6 +83,7 @@ class OrganizarArchivosDialog(wx.Frame):
     
 #Evento del botón "Organizar ahora"
     def organizar_archivos(self, event):
+        #Carpetas que se crearan con los archivos correspondientes
         categorias = {
             "Documentos": [".docx"],
             "Hojas de cálculo": [".xlsx"],
@@ -81,43 +96,63 @@ class OrganizarArchivosDialog(wx.Frame):
             "Audios": [".mp3", ".wav", ".aac"],
             "Otros": []
         }
+        #Recorre todos los archivos del directorio seleccionado
         for archivo in os.listdir(self.ruta_carpeta):
             ruta_archivo = os.path.join(self.ruta_carpeta, archivo)
+            #Omite las carpetas
             if os.path.isdir(ruta_archivo):
                 continue
+            #Obtiene la extension del archivo
             extension = os.path.splitext(archivo)
             extension = extension[1].lower()  # Obtener la extensión en minúsculas
+            #carpeta por defecto (para archivos por ejemplo .bin)
             carpeta_destino = "Otros"
+            #Busca la categoría correspondiente
             for categoria, extensiones in categorias.items():
                 if extension in extensiones:
                     carpeta_destino = categoria
                     break
+            #Crea la carpeta si aún no existe
             ruta_destino = os.path.join(self.ruta_carpeta, carpeta_destino)
             os.makedirs(ruta_destino, exist_ok=True)
+            #Mueve el archivo a la carpeta correspondiente
             shutil.move(ruta_archivo, os.path.join(ruta_destino, archivo))
+        #Avisa que la operación fue un exito
         wx.MessageBox("Archivos organizados correctamente", "Éxito", wx.OK | wx.ICON_INFORMATION)
         self.parent.actualizar_arbol() #Llama a la funcion actualizar_arbol() del frame principal para actualizarlo
         self.Close() #Cierra la ventana "Organizar archivos" despues de organizar los archivos
-        
-#clase para mostrar un screen en la pantalla antes de iniciar con el Frame
+
+#clase para mostrar un screen en la pantalla antes de abrir la ventana principal de la aplicacion
 class MiSplash(wx.adv.SplashScreen):
     def __init__(self):
+        #Obtiene la ruta donde se encuentra la imagen del logo
         ruta_logo = os.path.join(RUTA_BASE, "logo.png")
+        #Verifica que el archivo exista
         os.path.exists(ruta_logo)
-        imagen = wx.Image(ruta_logo) 
+        #Carga la imagen del logo
+        imagen = wx.Image(ruta_logo)
+        #Cambia el tamaño de la imagen para que sea mas ajustable
         imagen = imagen.Scale(100, 100, wx.IMAGE_QUALITY_HIGH)
+        #Convierte la imagen del logo en un Bitmap para mostrarla
         bitmap = wx.Bitmap(os.path.join(RUTA_BASE, "logo.png"))
+        #COnfiguracion para que sea ajuste en el centro de la pantalla
         splashStyle = wx.adv.SPLASH_CENTRE_ON_SCREEN | wx.adv.SPLASH_TIMEOUT
 
+        #Crea la ventana Splash Screen
         super().__init__(bitmap, splashStyle, 3000, None, -1)
-
+        #Cuando el splash se cierre, se ejecutara la función cerrar()
         self.Bind(wx.EVT_CLOSE, self.cerrar)
+        #Centra la ventana en la pantalla
         self.Centre()
+        #Muestra el SplashScreen
         self.Show()
-
+    #Función que se ejecuta cuando termina el SplashScreen
     def cerrar(self, event):
+        #Crea la ventana principal de la aplicación
         frame = MiFrame()
+        #Muestra la ventana principal
         frame.Show()
+        #Permite que le evento del screen se cierre continue con MiFrame
         event.Skip()        
 
 class MiFrame(wx.Frame):
