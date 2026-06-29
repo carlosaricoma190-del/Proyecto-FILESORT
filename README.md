@@ -42,5 +42,20 @@ pip install wxPython
 Ejecutar la aplicación:
 python "FILESORT.py"
 
+CAPTURAS DE FILESORT
 
+- Pantalla Principal
 
+![Inicio](screenshots/inicio.png)
+
+- Organizar Archivos
+
+![Organizar](screenshots/organizar.png)
+
+- Estadísticas
+
+![Estadísticas](screenshots/estadisticas.png)
+
+- Acerca De
+
+![About](screenshots/about.png)
