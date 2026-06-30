@@ -56,6 +56,10 @@ CAPTURAS DE FILESORT
 
 ![Estadísticas](screenshots/estadisticas.png)
 
+- Manual de ayuda
+
+![Estadísticas](screenshots/manual.png)
+
 - Acerca De
 
 ![About](screenshots/about.png)
