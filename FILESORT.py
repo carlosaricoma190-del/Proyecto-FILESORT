@@ -122,6 +122,23 @@ class OrganizarArchivosDialog(wx.Frame):
         self.parent.actualizar_arbol() #Llama a la funcion actualizar_arbol() del frame principal para actualizarlo
         self.Close() #Cierra la ventana "Organizar archivos" despues de organizar los archivos
 
+class ManualDeApp(wx.adv.WizardPageSimple):
+    def __init__(self, parent, title, contenido):
+        super().__init__(parent)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        titulo = wx.StaticText(self, label=title)
+        titulo.SetFont(wx.Font(14, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
+        sizer.Add(titulo, 0, wx.ALIGN_CENTRE | wx.ALL, 5)
+
+        sizer.Add(wx.StaticLine(self), 0, wx.EXPAND | wx.ALL, 5)
+
+        texto = wx.StaticText(self, label=contenido)
+        texto.Wrap(500)
+        sizer.Add(texto, 1, wx.EXPAND | wx.ALL, 10)
+
+        self.SetSizer(sizer)
+
 #clase para mostrar un screen en la pantalla antes de abrir la ventana principal de la aplicacion
 class MiSplash(wx.adv.SplashScreen):
     def __init__(self):
@@ -212,6 +229,7 @@ class MiFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.tema_oscuro, opcion_tema_oscuro)
         self.Bind(wx.EVT_MENU, self.tema_claro, opcion_tema_claro)
         self.Bind(wx.EVT_MENU, self.mostrar_estadisticas, opcion_estadisticas)
+        self.Bind(wx.EVT_MENU, self.mostrar_manual_de_app, opcion_manual_de_app)
         self.Bind(wx.EVT_MENU, self.acerca_de, opcion_acerca_de)
 
         #Detecta las columnas
@@ -310,6 +328,33 @@ class MiFrame(wx.Frame):
            return
         self.ventana_organizar = OrganizarArchivosDialog(self, self.ruta_carpeta)
         self.ventana_organizar.Show()
+
+    def mostrar_manual_de_app(self, event):
+        wizard = wx.adv.Wizard(self, -1, "Manual de FileSort")
+        wizard.CenterOnScreen()
+
+        paginas = [
+            ("Introducción", "FileSort es una aplicación para organizar y explorar archivos en tu computadora. Este manual te guiará a través de todas las características disponibles."),
+            ("Abrir Carpeta", "1. Ve al menú Archivo\n2. Selecciona 'Abrir carpeta'\n3. Elige la carpeta que deseas explorar\n\nLa carpeta aparecerá en el árbol de directorios y podrás ver su contenido en la lista."),
+            ("Buscar Archivos", "1. Escribe el nombre del archivo en la barra de búsqueda\n2. Presiona Enter o haz clic en el botón Buscar\n\nLos archivos que coincidan con tu búsqueda aparecerán en la lista."),
+            ("Ordenar Archivos", "Usa el menú Ver para ordenar los archivos por:\n- Nombre: orden alfabético\n- Fecha: por fecha de modificación\n- Tamaño (mayor a menor): archivos más grandes primero\n- Tamaño (menor a mayor): archivos más pequeños primero"),
+            ("Organizar Archivos", "1. Ve al menú Herramientas\n2. Selecciona 'Organizar archivos'\n3. Elige la opción deseada\n\nLos archivos se organizarán automáticamente en carpetas según su tipo."),
+            ("Estadísticas", "1. Ve al menú Herramientas\n2. Selecciona 'Estadísticas de carpeta'\n\nVerás información sobre el total de archivos, carpetas, tipos de archivos y tamaño total."),
+            ("Temas", "En el menú Herramientas puedes cambiar entre:\n- Tema oscuro: interfaz oscura para trabajar de noche\n- Tema claro: interfaz clara y tradicional"),
+            ("Fin", "¡Felicidades! Has completado el manual de FileSort.\n\nPara más información, consulta el menú Ayuda > Acerca de.")
+        ]
+
+        lista_paginas = []
+        for titulo, contenido in paginas:
+            pagina = ManualDeApp(wizard, titulo, contenido)
+            lista_paginas.append(pagina)
+
+        for i in range(len(lista_paginas) - 1):
+            wx.adv.WizardPageSimple.Chain(lista_paginas[i], lista_paginas[i + 1])
+
+        wizard.GetPageAreaSizer().Add(lista_paginas[0])
+        wizard.RunWizard(lista_paginas[0])
+        wizard.Destroy()
     
     #Esta funcion carga el arbol con los directorios y archivos de la ruta seleccionada
     def cargar_arbol(self, ruta, nodo_padre):
@@ -358,8 +403,6 @@ class MiFrame(wx.Frame):
                     tamaño = str(os.path.getsize(ruta_archivo) // 1024) + "KB"
                 else:
                     tamaño = str(os.path.getsize(ruta_archivo) // (1024 * 1024)) + "MB"
-                #else:
-                 #   tamaño = str(os.path.getsize(ruta_archivo) // (1024 * 1024 * 1024)) + "GB"
 
             fecha = datetime.datetime.fromtimestamp(
                     os.path.getmtime(ruta_archivo)).strftime("%d/%m/%Y %H:%M")
